@@ -25,39 +25,33 @@ def create_map(df):
         legend_title='Facility Type',
         geo=go.layout.Geo(
             resolution=50,
-            scope='europe',
+            scope='world',
             showframe=True,
             framecolor='black',
-            showcoastlines=True,
+            showcoastlines=True, coastlinecolor="darkgrey",
             landcolor="rgb(229, 229, 229)",
-            countrycolor="darkgrey",
-            coastlinecolor="darkgrey",
+            showcountries=True, countrycolor="darkgrey",
+            showocean=True, oceancolor="LightBlue",
+            showlakes=False,
             projection_type='mercator',
             lonaxis_range=[df['longitude'].min() - 5, df['longitude'].max() + 5],
-            lataxis_range=[df['latitude'].min() - 5, df['latitude'].max() + 5],
+            lataxis_range=[df['latitude'].min() - 1, df['latitude'].max() + 5],
         ),
     )
 
     # bubble_sizes = df['annual capacity'] / df['annual capacity'].max()
 
-    type_clr_dct = {'onshore facility': 'red', 'FSRU': 'blue', 'offshore facility': 'darkblue', 'expansion 1': 'green',
-                    'expansion 2': 'green', 'other': 'black'}
-    df['type'] = df['type'].map(lambda x: x if x in type_clr_dct.keys() else 'other')
-
-
     # add the terminals to the map via their latitude and longitude coordinates
-    for key in type_clr_dct.keys():
-        df_plot = df[df['type'] == key]
+    for trmnl_type in df['type'].unique().tolist():
+        df_plot = df[df['type'] == trmnl_type]
         fig.add_trace(go.Scattergeo(
-            name=key,
+            name=trmnl_type,
             lon=df_plot['longitude'],
             lat=df_plot['latitude'],
             text=df_plot['description'],
             marker=dict(
                 # scale the bubbles according to their relative annual capacity
                 size=df_plot['annual capacity'] / df_plot['annual capacity'].max() * 200,
-                # colour bubbles according to set dictionary
-                color=df_plot['type'].map(type_clr_dct),
                 opacity=0.6,
                 line_color='black',
                 line_width=0.6,
