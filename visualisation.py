@@ -14,6 +14,9 @@ df_map['description'] = 'Location: ' + df_map['location'] \
                         + '<br>Annual Capacity: ' + df_map['annual capacity'].map(lambda x: x / 10**9).astype(str) \
                         + ' billion m<sup>3</sup>'
 
+# todo improve default value
+df_map['start up date'] = df_map['start up date'].map(lambda x: 2000 if x == '?' else x)
+
 
 def create_map(df):
     fig = go.Figure()
@@ -64,5 +67,3 @@ def create_map(df):
     )
 
     return fig
-
-# fig.show()
