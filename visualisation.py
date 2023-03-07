@@ -1,21 +1,24 @@
 import plotly.graph_objects as go
 import pandas as pd
 
-# prepare the dataframe vor visualisation
-# todo make function
-df_map = pd.read_excel('database.xlsx', skiprows=0)
-df_map['annual capacity'] = df_map['annual capacity'].map(lambda x: 0 if x == '?' else float(x))
-df_map['latitude'] = df_map['latitude'].map(lambda x: float(x))
-df_map['longitude'] = df_map['longitude'].map(lambda x: float(x))
-# description to be displayed in as hover text (html formatting)
-df_map['description'] = 'Location: ' + df_map['location'] \
-                        + '<br>Type: ' + df_map['type'] \
-                        + '<br>Start up Date: ' + df_map['start up date'].astype(str) \
-                        + '<br>Annual Capacity: ' + df_map['annual capacity'].map(lambda x: x / 10**9).astype(str) \
-                        + ' billion m<sup>3</sup>'
 
-# todo improve default value
-df_map['start up date'] = df_map['start up date'].map(lambda x: 2000 if x == '?' else x)
+def read_terminals_csv():
+    global df_map
+    # prepare the dataframe vor visualisation
+    df_map = pd.read_excel('database.xlsx', skiprows=0)
+    df_map['annual capacity'] = df_map['annual capacity'].map(lambda x: 0 if x == '?' else float(x))
+    df_map['latitude'] = df_map['latitude'].map(lambda x: float(x))
+    df_map['longitude'] = df_map['longitude'].map(lambda x: float(x))
+    # description to be displayed in as hover text (html formatting)
+    df_map['description'] = 'Location: ' + df_map['location'] \
+                            + '<br>Type: ' + df_map['type'] \
+                            + '<br>Start up Date: ' + df_map['start up date'].astype(str) \
+                            + '<br>Annual Capacity: ' + df_map['annual capacity'].map(lambda x: x / 10 ** 9).astype(str) \
+                            + ' billion m<sup>3</sup>'
+    # todo improve default value / research dates
+    df_map['start up date'] = df_map['start up date'].map(lambda x: 2000 if x == '?' else x)
+
+    return df_map
 
 
 def create_map(df):
@@ -67,3 +70,6 @@ def create_map(df):
     )
 
     return fig
+
+
+df_map = read_terminals_csv()
