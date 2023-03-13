@@ -2,23 +2,22 @@ import plotly.graph_objects as go
 import pandas as pd
 
 
-def read_terminals_csv():
-    global df_map
+def read_terminals_db():
     # prepare the dataframe vor visualisation
-    df_map = pd.read_excel('database.xlsx', skiprows=0)
-    df_map['annual capacity'] = df_map['annual capacity'].map(lambda x: 0 if x == '?' else float(x))
-    df_map['latitude'] = df_map['latitude'].map(lambda x: float(x))
-    df_map['longitude'] = df_map['longitude'].map(lambda x: float(x))
+    df_db = pd.read_excel('database.xlsx', skiprows=0)
+    df_db['annual capacity'] = df_db['annual capacity'].map(lambda x: 0 if x == '?' else float(x))
+    df_db['latitude'] = df_db['latitude'].map(lambda x: float(x))
+    df_db['longitude'] = df_db['longitude'].map(lambda x: float(x))
     # description to be displayed in as hover text (html formatting)
-    df_map['description'] = 'Location: ' + df_map['location'] \
-                            + '<br>Type: ' + df_map['type'] \
-                            + '<br>Start up Date: ' + df_map['start up date'].astype(str) \
-                            + '<br>Annual Capacity: ' + df_map['annual capacity'].map(lambda x: x / 10 ** 9).astype(str) \
+    df_db['description'] = 'Location: ' + df_db['location'] \
+                            + '<br>Type: ' + df_db['type'] \
+                            + '<br>Start up Date: ' + df_db['start up date'].astype(str) \
+                            + '<br>Annual Capacity: ' + df_db['annual capacity'].map(lambda x: x / 10 ** 9).astype(str) \
                             + ' billion m<sup>3</sup>'
     # todo improve default value / research dates
-    df_map['start up date'] = df_map['start up date'].map(lambda x: 2000 if x == '?' else x)
+    df_db['start up date'] = df_db['start up date'].map(lambda x: 2030 if x == '?' else x)
 
-    return df_map
+    return df_db
 
 
 def create_map(df):
@@ -40,8 +39,8 @@ def create_map(df):
             showocean=True, oceancolor="LightBlue",
             showlakes=False,
             projection_type='mercator',
-            lonaxis_range=[df['longitude'].min() - 5, df['longitude'].max() + 5],
-            lataxis_range=[df['latitude'].min() - 1, df['latitude'].max() + 5],
+            lonaxis_range=[df['longitude'].min() - 3, df['longitude'].max() + 3],
+            lataxis_range=[df['latitude'].min() - 1, df['latitude'].max() + 3],
         ),
     )
 
@@ -66,10 +65,36 @@ def create_map(df):
         ))
 
     fig.update_layout(
-        height=1200,
+        height=800,
     )
 
     return fig
 
 
-df_map = read_terminals_csv()
+def stats_n_plots(df, year_filter, country_filter, type_filter):
+    df = df[(df['start up date'] <= year_filter)]
+
+    if type_filter:
+        df = df[df.type.isin(type_filter)]
+
+    ann_cap_eu = df['annual capacity'].sum()
+    print('annual capacity:', ann_cap_eu)
+
+    if country_filter:
+        df = df[df.country.isin(country_filter)]
+
+    # an_cap = df[df.country in country_filter]['annual capacity'].sum()
+
+    fig = go.Figure()
+
+    fig.add_trace(go.Bar(
+        x=['Europe'] + df['country'].tolist(),
+        y=[ann_cap_eu] + [df[df.country == country]['annual capacity'].sum() for country in df.country.dropna().unique()]
+    ))
+
+    fig.update_yaxes(title='Annual Capacity [m<sup>3</sup>]')
+
+    return fig
+
+
+df_map = read_terminals_db()
