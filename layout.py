@@ -126,20 +126,9 @@ app.layout = html.Div(children=[
     Output('map', 'figure'),
     Input('years_slider', 'value')
 )
-def filter_map(year_slct):
-    # filter dataframe for terminals build before or in selected year
-    df = visualisation.df_map[visualisation.df_map['start up date'] <= year_slct]
-
-    # aggregate facilities and their expansions
-    df_agg = df.groupby(['latitude', 'longitude', 'type']).first()
-    df_agg['annual capacity'] = df.groupby(['latitude', 'longitude', 'type'])['annual capacity'].sum()
-    df_agg['min capacity [kWh]'] = df.groupby(['latitude', 'longitude', 'type'])['min capacity [kWh]'].sum()
-    df_agg['max capacity [kWh]'] = df.groupby(['latitude', 'longitude', 'type'])['max capacity [kWh]'].sum()
-    df_agg['latitude'], df_agg['longitude'], df_agg['type'] = zip(*df_agg.index)
-    df_agg.reset_index(drop=True, inplace=True)
-
+def update_map(year_slct):
     # create map
-    filtered_map = visualisation.create_map(df_agg)
+    filtered_map = visualisation.create_map(visualisation.df_map, year_slct)
 
     return filtered_map
 
@@ -157,7 +146,6 @@ def update_stats(submit_btn, year_slct, country_slct, type_slct):
     year_slct = 2023 if year_slct is None else int(year_slct)
 
     fig = visualisation.stats_n_plots(visualisation.df_map, year_slct, country_slct, type_slct)
-    #fig = visualisation.plot_demand(visualisation.df_map, visualisation.df_demand, country_slct[0], year_slct)
 
     return fig
 

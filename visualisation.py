@@ -31,21 +31,35 @@ def read_terminals_db():
     return df_db
 
 
-def create_map(df):
+def create_map(df, year):
+    lonaxis_range = [df['longitude'].min() - 10, df['longitude'].max() + 10]
+    lataxis_range = [df['latitude'].min() - 0.5, df['latitude'].max() + 2]
+
+    # filter dataframe for terminals build before or in selected year
+    df = df[df['start up date'] <= year]
+
+    # aggregate facilities and their expansions
+    df_map = df.groupby(['latitude', 'longitude', 'type']).first()
+    df_map['annual capacity'] = df.groupby(['latitude', 'longitude', 'type'])['annual capacity'].sum()
+    df_map['min capacity [kWh]'] = df.groupby(['latitude', 'longitude', 'type'])['min capacity [kWh]'].sum()
+    df_map['max capacity [kWh]'] = df.groupby(['latitude', 'longitude', 'type'])['max capacity [kWh]'].sum()
+    df_map['latitude'], df_map['longitude'], df_map['type'] = zip(*df_map.index)
+    df_map.reset_index(drop=True, inplace=True)
+
     # description to be displayed in as hover text (html formatting)
-    df['description'] = 'Location: ' + df['location'] \
-                            + '<br>Type: ' + df['type'] \
-                            + '<br>Start up Date: ' + df['start up date'].astype(str) \
+    df_map['description'] = 'Location: ' + df_map['location'] \
+                            + '<br>Type: ' + df_map['type'] \
+                            + '<br>Start up Date: ' + df_map['start up date'].astype(str) \
                             + '<br>Annual Capacity [billion m<sup>3</sup>]: ' \
-                            + df['annual capacity'].map(lambda x: x / 10 ** 9).astype(str) \
-                            + '<br>Annual Capacity [TWh]: ' + df['min capacity [kWh]'].map(lambda x: x / 10 ** 9).astype(str) \
-                            + ' - ' + df['max capacity [kWh]'].map(lambda x: x / 10 ** 9).astype(str)
+                            + df_map['annual capacity'].map(lambda x: x / 10 ** 9).astype(str) \
+                            + '<br>Annual Capacity [TWh]: ' + df_map['min capacity [kWh]'].map(lambda x: x / 10 ** 9).astype(str) \
+                            + ' - ' + df_map['max capacity [kWh]'].map(lambda x: x / 10 ** 9).astype(str)
 
     fig = go.Figure()
 
     fig.update_layout(
         title='LNG Terminals in Europe',
-        title_x=0.5,
+        title_x=0.43,
         showlegend=True,
         legend_title='Facility Type',
         geo=go.layout.Geo(
@@ -59,14 +73,14 @@ def create_map(df):
             showocean=True, oceancolor="LightBlue",
             showlakes=False,
             projection_type='mercator',
-            lonaxis_range=[df['longitude'].min() - 3, df['longitude'].max() + 3],
-            lataxis_range=[df['latitude'].min() - 1, df['latitude'].max() + 3],
+            lonaxis_range=lonaxis_range,
+            lataxis_range=lataxis_range,
         ),
     )
 
     # add the terminals to the map via their latitude and longitude coordinates
-    for trmnl_type in df['type'].sort_values().unique().tolist():
-        df_plot = df[df['type'] == trmnl_type]
+    for trmnl_type in df_map['type'].sort_values().unique().tolist():
+        df_plot = df_map[df_map['type'] == trmnl_type]
         fig.add_trace(go.Scattergeo(
             name=trmnl_type,
             lon=df_plot['longitude'],
@@ -85,7 +99,7 @@ def create_map(df):
         ))
 
     fig.update_layout(
-        height=800,
+        height=700,
     )
 
     return fig
