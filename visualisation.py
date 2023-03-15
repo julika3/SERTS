@@ -93,7 +93,7 @@ def create_map(df):
 
 def stats_n_plots(df, year_filter, country_filter, type_filter):
     df = df[(df['start up date'] <= year_filter)]
-    show_europe = True
+    show_europe = False
 
     if type_filter:
         df = df[df.type.isin(type_filter)]
@@ -131,16 +131,43 @@ def stats_n_plots(df, year_filter, country_filter, type_filter):
     return fig
 
 
-def plot_demand(df, annual_supply):
-    df = pd.read_excel('Production&Demand.xlsx', sheet_name='demand_storage_kWh')
+def plot_demand(df_lng, df_demand, country_filter, year):
 
-    fig_pie = go.Figure()
+    if not country_filter:
+        country_filter = df_demand['country'].sort_values().unique().tolist()
 
-    fig_pie.add_trace(
-        go.Pie(labels=['European Gas Demand '])
-    )
+    df_lng = df_lng[df_lng['start up date'] <= year]
 
-    return df
+    fig = go.Figure()
+
+    fig.update_layout(title=f'Demand and LNG Capacities in in {year}')
+
+    for country in country_filter:
+        df_lng_temp = df_lng[df_lng.country == country].sum() if country != 'Europe' else df_lng.sum()
+        lng_cap_l = df_lng_temp['min capacity [kWh]']
+        lng_cap_h = df_lng_temp['max capacity [kWh]']
+
+        df_demand_temp = df_demand[df_demand.country == country].sum() if country != 'Europe' \
+                                                                            else df_demand.sum()
+        demand = df_demand_temp['Total 2021']
+
+        fig.add_trace(
+            go.Bar(
+                x=['Demand (2021)', 'LNG Supply (L Gas)', 'LNG Supply (H Gas)'],
+                y=[x / 10**9 for x in (demand, lng_cap_l, lng_cap_h)],
+                name=country
+            )
+        )
+
+    fig.update_layout(barmode='stack')
+
+    fig.layout.showlegend = True
+
+    fig.update_yaxes(title='Annual LNG Capacities / Gas Demand [TWh]')
+
+    return fig
 
 
 df_map = read_terminals_db()
+df_demand = pd.read_excel('Production&Demand.xlsx', sheet_name='demand_storage_kWh')
+european_demand = df_demand['Total 2021'].sum()

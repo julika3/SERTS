@@ -3,15 +3,17 @@ import visualisation
 
 app = Dash('SER-TS')
 
-stats_plot_all = visualisation.stats_n_plots(visualisation.df_map, 2023, [], [])
+stats_plot_start = visualisation.stats_n_plots(visualisation.df_map, 2023,
+                                               visualisation.df_map['country'].sort_values().unique().tolist(), [])
 
 # create a dict of all the years with new LNG terminals to use for the slider
 marks_dict = {int(year): {"label": str(year), "style": {"transform": "rotate(45deg)"}}
               for year in visualisation.df_map['start up date'].unique()}
 
-# list of options for country filter
+# list of options for filters
 country_selection = ['Europe'] + visualisation.df_map['country'].sort_values().unique().tolist()
 type_selection = visualisation.df_map['type'].unique().tolist()
+country_selection_demand = ['Europe'] + visualisation.df_demand['country'].sort_values().unique().tolist()
 
 app.layout = html.Div(children=[
     # header and background info
@@ -51,16 +53,17 @@ app.layout = html.Div(children=[
         html.H2('Overall annual capacity'),
 
         # filters
-        # todo put filters next to each other
         html.Div([
             # dropdown for country and type
             html.Div([dcc.Dropdown(
                 options=country_selection,
+                placeholder='all countries',
                 multi=True,
                 id='country_slct')],
             ),
             html.Div([dcc.Dropdown(
                 options=type_selection,
+                placeholder='all types',
                 multi=True,
                 id='type_slct')],
             ),
@@ -80,7 +83,38 @@ app.layout = html.Div(children=[
         # Plot
         html.Div([dcc.Graph(
             id='stats_plot',
-            figure=stats_plot_all
+            figure=stats_plot_start
+        )]),
+
+
+        # header
+        html.H2('Capacity and Demand'),
+
+        # filters
+        html.Div([
+            # dropdown for country and type
+            html.Div([dcc.Dropdown(
+                options=country_selection_demand,
+                multi=True,
+                placeholder='all countries',
+                id='country_slct_demand')],
+            ),
+
+            # entry box for year
+            html.Div([dcc.Input(
+                id="input_year_demand",
+                type='number',
+                value='2023', )]
+            ),
+
+            html.Button('Submit', id='submit_filter_demand', n_clicks=0),
+
+        ], style={'width': '15%'}
+        ),
+
+        # Plot
+        html.Div([dcc.Graph(
+            id='demand_plot'
         )])
 
     ])
@@ -123,5 +157,21 @@ def update_stats(submit_btn, year_slct, country_slct, type_slct):
     year_slct = 2023 if year_slct is None else int(year_slct)
 
     fig = visualisation.stats_n_plots(visualisation.df_map, year_slct, country_slct, type_slct)
+    #fig = visualisation.plot_demand(visualisation.df_map, visualisation.df_demand, country_slct[0], year_slct)
+
+    return fig
+
+
+@app.callback(
+    Output('demand_plot', 'figure'),
+    Input('submit_filter_demand', 'n_clicks'),
+    [State('input_year_demand', 'value'),
+     State('country_slct_demand', 'value')]
+)
+def update_stats(submit_btn, year_slct, country_slct):
+    country_slct = [] if country_slct is None else country_slct
+    year_slct = 2023 if year_slct is None else int(year_slct)
+
+    fig = visualisation.plot_demand(visualisation.df_map, visualisation.df_demand, country_slct, year_slct)
 
     return fig
