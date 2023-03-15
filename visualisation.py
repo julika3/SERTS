@@ -140,7 +140,7 @@ def stats_n_plots(df, year_filter, country_filter, type_filter):
 
     fig.update_yaxes(title='Annual Capacity [m<sup>3</sup>]')
 
-    fig.layout.showlegend = True
+    fig.update_layout(showlegend=True, legend={'traceorder': 'normal'})
 
     return fig
 
@@ -157,7 +157,8 @@ def plot_demand(df_lng, df_demand, country_filter, year):
     fig.update_layout(title=f'Demand and LNG Capacities in in {year}')
 
     for country in country_filter:
-        df_lng_temp = df_lng[df_lng.country == country].sum() if country != 'Europe' else df_lng.sum()
+        df_lng_temp = df_lng[df_lng.country == country].sum(numeric_only=True) if country != 'Europe' \
+                                                                                else df_lng.sum(numeric_only=True)
         lng_cap_l = df_lng_temp['min capacity [kWh]']
         lng_cap_h = df_lng_temp['max capacity [kWh]']
 
@@ -175,7 +176,7 @@ def plot_demand(df_lng, df_demand, country_filter, year):
 
     fig.update_layout(barmode='stack')
 
-    fig.layout.showlegend = True
+    fig.update_layout(showlegend=True, legend={'traceorder': 'normal'})
 
     fig.update_yaxes(title='Annual LNG Capacities / Gas Demand [TWh]')
 
