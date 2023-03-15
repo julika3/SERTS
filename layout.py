@@ -33,7 +33,7 @@ app.layout = html.Div(children=[
     # main body: map and filter (slider)
     html.Div([
         # Slider to filter for terminals up to a certain year
-        dcc.Slider(min(marks_dict.keys()), 2030, step=None,
+        dcc.Slider(min(marks_dict.keys()), 2031, step=None,
                    marks=marks_dict,
                    id='years_slider',
                    value=2023
@@ -99,14 +99,10 @@ def filter_map(year_slct):
     # aggregate facilities and their expansions
     df_agg = df.groupby(['latitude', 'longitude', 'type']).first()
     df_agg['annual capacity'] = df.groupby(['latitude', 'longitude', 'type'])['annual capacity'].sum()
+    df_agg['min capacity [kWh]'] = df.groupby(['latitude', 'longitude', 'type'])['min capacity [kWh]'].sum()
+    df_agg['max capacity [kWh]'] = df.groupby(['latitude', 'longitude', 'type'])['max capacity [kWh]'].sum()
     df_agg['latitude'], df_agg['longitude'], df_agg['type'] = zip(*df_agg.index)
     df_agg.reset_index(drop=True, inplace=True)
-    # update description with new current capacities
-    df_agg['description'] = 'Location: ' + df_agg['location'] \
-                            + '<br>Type: ' + df_agg['type'] \
-                            + '<br>Start up Date: ' + df_agg['start up date'].astype(str) \
-                            + '<br>Annual Capacity: ' + df_agg['annual capacity'].map(lambda x: x / 10 ** 9).astype(str) \
-                            + ' billion m<sup>3</sup>'
 
     # create map
     filtered_map = visualisation.create_map(df_agg)
