@@ -1,19 +1,17 @@
 from dash import Dash, dcc, html, Input, Output, State
-import visualisation
+import data
+
 
 app = Dash('SER-TS')
 
-stats_plot_start = visualisation.stats_n_plots(visualisation.df_map, 2023,
-                                               visualisation.df_map['country'].sort_values().unique().tolist(), [])
-
 # create a dict of all the years with new LNG terminals to use for the slider
 marks_dict = {int(year): {"label": str(year), "style": {"transform": "rotate(45deg)"}}
-              for year in visualisation.df_map['start up date'].unique()}
+              for year in data.df_lng_terminals[data.START_UP_DATE].unique()}
 
 # list of options for filters
-country_selection = ['Europe'] + visualisation.df_map['country'].sort_values().unique().tolist()
-type_selection = visualisation.df_map['type'].unique().tolist()
-country_selection_demand = ['Europe'] + visualisation.df_demand['country'].sort_values().unique().tolist()
+country_selection = ['Europe'] + data.df_lng_terminals[data.COUNTRY].sort_values().unique().tolist()
+type_selection = data.df_lng_terminals[data.TYPE].unique().tolist()
+country_selection_demand = ['Europe'] + data.df_demand_2021[data.COUNTRY].sort_values().unique().tolist()
 
 app.layout = html.Div(children=[
     # header and background info
@@ -82,8 +80,7 @@ app.layout = html.Div(children=[
 
         # Plot
         html.Div([dcc.Graph(
-            id='stats_plot',
-            figure=stats_plot_start
+            id='stats_plot'
         )]),
 
 
@@ -128,7 +125,7 @@ app.layout = html.Div(children=[
 )
 def update_map(year_slct):
     # create map
-    filtered_map = visualisation.create_map(visualisation.df_map, year_slct)
+    filtered_map = data.create_map(data.df_lng_terminals, year_slct)
 
     return filtered_map
 
@@ -140,12 +137,15 @@ def update_map(year_slct):
      State('country_slct', 'value'),
      State('type_slct', 'value')]
 )
-def update_stats(submit_btn, year_slct, country_slct, type_slct):
-    country_slct = [] if country_slct is None else country_slct
-    type_slct = [] if type_slct is None else type_slct
+def update_terminals_stats(submit_btn, year_slct, country_slct, type_slct):
+    # if intially no input is selected, the state defaults to None
+    # if all selections are removed it returns an empty list
+    # create uniform behaviour for the plotting functions
+    country_slct = country_slct if country_slct else None
+    type_slct = type_slct if type_slct else None
     year_slct = 2023 if year_slct is None else int(year_slct)
 
-    fig = visualisation.stats_n_plots(visualisation.df_map, year_slct, country_slct, type_slct)
+    fig = data.stats_n_plots(data.df_lng_terminals, year_slct, country_slct, type_slct)
 
     return fig
 
@@ -156,10 +156,13 @@ def update_stats(submit_btn, year_slct, country_slct, type_slct):
     [State('input_year_demand', 'value'),
      State('country_slct_demand', 'value')]
 )
-def update_stats(submit_btn, year_slct, country_slct):
-    country_slct = [] if country_slct is None else country_slct
+def update_demand_stats(submit_btn, year_slct, country_slct):
+    # if intially no input is selected, the state defaults to None
+    # if all selections are removed it returns an empty list
+    # create uniform behaviour for the plotting functions
+    country_slct = country_slct if country_slct else None
     year_slct = 2023 if year_slct is None else int(year_slct)
 
-    fig = visualisation.plot_demand(visualisation.df_map, visualisation.df_demand, country_slct, year_slct)
+    fig = data.plot_demand(data.df_lng_terminals, data.df_demand_2021, year_slct, country_slct)
 
     return fig
