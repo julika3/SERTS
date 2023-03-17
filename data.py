@@ -6,6 +6,7 @@ import pandas as pd
 # LNG Terminals
 DATABASE_FILENAME = 'database.xlsx'
 
+# column names
 CAPACITY = 'annual capacity'
 COUNTRY = 'country'
 LOCATION = 'location'
@@ -17,6 +18,8 @@ TYPE = 'type'
 # Demand
 DEMAND_DB_FILENAME = 'Production&Demand.xlsx'
 DEMAND_DB_SHEET = 'demand_storage_kWh'
+
+# column name
 DEMAND_2021 = 'Total 2021'
 
 
@@ -212,5 +215,6 @@ def plot_demand(df_lng, df_demand, year, country_filter=None):
     return fig
 
 
+# Databases dataframes
 df_lng_terminals = read_terminals_db()
 df_demand_2021 = pd.read_excel(DEMAND_DB_FILENAME, sheet_name=DEMAND_DB_SHEET)
