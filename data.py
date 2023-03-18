@@ -23,15 +23,21 @@ DEMAND_DB_SHEET = 'demand_storage_kWh'
 # column name
 DEMAND_2021 = 'Total 2021'
 PERCENTAGE_RG = 'Percentage Russian Gas'
+# COUNTRY = lng_terminals COUNTRY
 
 
 # set colours for the different terminal types to use for both the map and stats
+# within the functions red is declared as a fallback color if the name isn't one of these
 type_colour_dict = {'FRU + direct link to UGS': 'darkblue',
                     'FSRU': 'cornflowerblue',
                     'FSU and onshore Regasification': 'seagreen',
                     'offshore GBS': 'slateblue',
                     'onshore facility': 'olive'
                     }
+
+# a list of plotly colour codes
+# after importing the database colours a unique colour is assigned to each country
+color_variety = colors.qualitative.Alphabet + colors.qualitative.Set3 + colors.qualitative.Antique
 
 
 def read_terminals_db():
@@ -43,7 +49,7 @@ def read_terminals_db():
     df_capacity[LATITUDE] = df_capacity[LATITUDE].map(lambda x: float(x))
     df_capacity[LONGITUDE] = df_capacity[LONGITUDE].map(lambda x: float(x))
 
-    # m^3 to kWh via the calorific value (SERTS Wrap Up p. 201)
+    # m^3 to kWh via the calorific value (DVGW G 260)
     # natural gas (L): 8,4 - 10,2 kWh/m^3
     cal_val_l_min = 8.4
     df_capacity['min capacity [kWh]'] = df_capacity[CAPACITY] * cal_val_l_min
@@ -161,10 +167,10 @@ def plot_terminal_capacities(df_lng, year_filter, country_filter=None, type_filt
         # add europe if the filter was selected
         country_type = [cntry for cntry in df_bar[COUNTRY].sort_values().unique().tolist() if cntry in country_filter]
         countries_plot = ['Europe'] + country_type if show_europe else country_type
-        # sum up capacities for each country with the terminal type thats in the selected filter
+        # sum up capacities for each country with the terminal type thats in the selected filter, convert to billion m^3
         # add an unfiltered sum for europe if selected
         cap_country_type = [df_bar[df_bar[COUNTRY] == country][CAPACITY].sum() for country in country_type]
-        cap_plot = [df_bar[CAPACITY].sum()] + cap_country_type if show_europe else cap_country_type
+        cap_plot = [df_bar[CAPACITY].sum() / 10**9] + cap_country_type if show_europe else cap_country_type
 
         fig.add_trace(go.Bar(
             x=countries_plot,
@@ -173,7 +179,7 @@ def plot_terminal_capacities(df_lng, year_filter, country_filter=None, type_filt
             name=trmnl_type
         ))
 
-    fig.update_yaxes(title='Annual Capacity [m<sup>3</sup>]')
+    fig.update_yaxes(title='Annual Capacity [billion m<sup>3</sup>]')
     fig.update_layout(title=f'Annual LNG Capacities in {year_filter}')
     fig.update_layout(barmode='stack', showlegend=True, legend={'traceorder': 'normal'})
 
@@ -211,9 +217,10 @@ def plot_demand(df_lng, df_demand, year, country_filter=None):
         # create trace in bar chart format, convert from kWh to TWh
         fig.add_trace(
             go.Bar(
-                x=['Total Demand (2021)', 'Demand for Russian Gas', 'LNG Supply (L Gas)', 'LNG Supply (H Gas)'],
+                x=['Total Demand (2021)', 'Demand for Russian Gas (2021)', 'LNG Supply (L Gas)', 'LNG Supply (H Gas)'],
                 y=[x / 10**9 for x in (demand, demand_rg, lng_cap_l, lng_cap_h)],
-                name=country
+                name=country,
+                marker_color=country_colour_dict[country] if country in country_colour_dict.keys() else 'red'
             )
         )
 
@@ -226,3 +233,7 @@ def plot_demand(df_lng, df_demand, year, country_filter=None):
 
 # Databases dataframes
 df_lng_terminals, df_demand_2021 = read_terminals_db()
+
+# assign a unique colour to be used in the plots for each country and one for 'Europe'
+country_colour_dict = dict((country, color_variety[n]) for n, country in
+                           enumerate(df_demand_2021[COUNTRY].sort_values().unique().tolist() + ['Europe']))
