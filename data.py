@@ -40,7 +40,7 @@ type_colour_dict = {'FRU + direct link to UGS': 'darkblue',
 color_variety = colors.qualitative.Alphabet + colors.qualitative.Set3 + colors.qualitative.Antique
 
 
-def read_terminals_db():
+def read_databases():
     # prepare the dataframe vor visualisation
     df_capacity = pd.read_excel(LNG_DB_FILENAME, skiprows=0)
     # some terminals which are still being built haven't published a final capacity yet
@@ -84,7 +84,7 @@ def create_map(df, year):
     df_map.reset_index(drop=True, inplace=True)
 
     # description to be displayed in as hover text (html formatting)
-    df_map['description'] = 'Location: ' + df_map[LOCATION] \
+    df_map['description'] = 'Location: ' + df_map[LOCATION] + ' ' + df_map[COUNTRY]\
                             + '<br>Type: ' + df_map[TYPE] \
                             + '<br>Start up Date: ' + df_map[START_UP_DATE].astype(str) \
                             + '<br>Annual Capacity [billion m<sup>3</sup>]: ' \
@@ -169,7 +169,7 @@ def plot_terminal_capacities(df_lng, year_filter, country_filter=None, type_filt
         countries_plot = ['Europe'] + country_type if show_europe else country_type
         # sum up capacities for each country with the terminal type thats in the selected filter, convert to billion m^3
         # add an unfiltered sum for europe if selected
-        cap_country_type = [df_bar[df_bar[COUNTRY] == country][CAPACITY].sum() for country in country_type]
+        cap_country_type = [df_bar[df_bar[COUNTRY] == country][CAPACITY].sum() / 10**9 for country in country_type]
         cap_plot = [df_bar[CAPACITY].sum() / 10**9] + cap_country_type if show_europe else cap_country_type
 
         fig.add_trace(go.Bar(
@@ -232,8 +232,8 @@ def plot_demand(df_lng, df_demand, year, country_filter=None):
 
 
 # Databases dataframes
-df_lng_terminals, df_demand_2021 = read_terminals_db()
+df_lng_terminals, df_demand_2021 = read_databases()
 
 # assign a unique colour to be used in the plots for each country and one for 'Europe'
 country_colour_dict = dict((country, color_variety[n]) for n, country in
-                           enumerate(df_demand_2021[COUNTRY].sort_values().unique().tolist() + ['Europe']))
+                           enumerate(df_demand_2021[COUNTRY].dropna().sort_values().unique().tolist() + ['Europe']))

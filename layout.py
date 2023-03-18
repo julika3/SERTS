@@ -6,7 +6,7 @@ app = Dash('SER-TS')
 
 # create a dict of all the years with new LNG terminals to use for the slider
 marks_dict = {int(year): {"label": str(year), "style": {"transform": "rotate(45deg)"}}
-              for year in data.df_lng_terminals[data.START_UP_DATE].unique()}
+              for year in data.df_lng_terminals[data.START_UP_DATE].dropna().unique()}
 
 # list of options for filters
 country_selection = ['Europe'] + data.df_lng_terminals[data.COUNTRY].sort_values().unique().tolist()
