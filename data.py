@@ -1,10 +1,11 @@
 import plotly.graph_objects as go
+from plotly.express import colors
 import pandas as pd
 
 ## constants for the filnames. for files in different directories the path may also be added to the filename
 ## additionally constants for variable names taken from database table headers
 # LNG Terminals
-DATABASE_FILENAME = 'database.xlsx'
+LNG_DB_FILENAME = 'database.xlsx'
 
 # column names
 CAPACITY = 'annual capacity'
@@ -21,6 +22,7 @@ DEMAND_DB_SHEET = 'demand_storage_kWh'
 
 # column name
 DEMAND_2021 = 'Total 2021'
+PERCENTAGE_RG = 'Percentage Russian Gas'
 
 
 # set colours for the different terminal types to use for both the map and stats
@@ -34,26 +36,29 @@ type_colour_dict = {'FRU + direct link to UGS': 'darkblue',
 
 def read_terminals_db():
     # prepare the dataframe vor visualisation
-    df_db = pd.read_excel(DATABASE_FILENAME, skiprows=0)
+    df_capacity = pd.read_excel(LNG_DB_FILENAME, skiprows=0)
     # some terminals which are still being built haven't published a final capacity yet
     # these unknown capacities aren't estimated in this model and instead appear as zero
-    df_db[CAPACITY] = df_db[CAPACITY].map(lambda x: 0 if x == '?' else float(x))
-    df_db[LATITUDE] = df_db[LATITUDE].map(lambda x: float(x))
-    df_db[LONGITUDE] = df_db[LONGITUDE].map(lambda x: float(x))
+    df_capacity[CAPACITY] = df_capacity[CAPACITY].map(lambda x: 0 if x == '?' else float(x))
+    df_capacity[LATITUDE] = df_capacity[LATITUDE].map(lambda x: float(x))
+    df_capacity[LONGITUDE] = df_capacity[LONGITUDE].map(lambda x: float(x))
 
     # m^3 to kWh via the calorific value (SERTS Wrap Up p. 201)
     # natural gas (L): 8,4 - 10,2 kWh/m^3
     cal_val_l_min = 8.4
-    df_db['min capacity [kWh]'] = df_db[CAPACITY] * cal_val_l_min
+    df_capacity['min capacity [kWh]'] = df_capacity[CAPACITY] * cal_val_l_min
     # natural gas (H): 11,1 - 13,1 kWh/m^3
     cal_val_h_max = 13.1
-    df_db['max capacity [kWh]'] = df_db[CAPACITY] * cal_val_h_max
+    df_capacity['max capacity [kWh]'] = df_capacity[CAPACITY] * cal_val_h_max
 
     # assign an out-of-scope start up date to terminals with unknown start up years to make them visible in map
     # these start up dates are unknown bc the completion date isn't final yet
-    df_db[START_UP_DATE] = df_db[START_UP_DATE].map(lambda x: 2031 if x == '?' else x)
+    df_capacity[START_UP_DATE] = df_capacity[START_UP_DATE].map(lambda x: 2031 if x == '?' else x)
 
-    return df_db
+    df_demand = pd.read_excel(DEMAND_DB_FILENAME, sheet_name=DEMAND_DB_SHEET)
+    df_demand['russian gas'] = df_demand[DEMAND_2021] * df_demand[PERCENTAGE_RG]
+
+    return df_capacity, df_demand
 
 
 def create_map(df, year):
@@ -179,6 +184,9 @@ def plot_demand(df_lng, df_demand, year, country_filter=None):
     # if no filter for the countries is selected visualise all countries in database
     if country_filter is None:
         country_filter = df_demand[COUNTRY].sort_values().unique().tolist()
+    # if europe is part of the selection it's nonsensical to add other countries too as they're already incorporated
+    elif 'Europe' in country_filter:
+        country_filter = ['Europe']
 
     # set selected year filter
     df_lng = df_lng[df_lng[START_UP_DATE] <= year]
@@ -198,12 +206,13 @@ def plot_demand(df_lng, df_demand, year, country_filter=None):
         lng_cap_l = df_lng_temp['min capacity [kWh]']
         lng_cap_h = df_lng_temp['max capacity [kWh]']
         demand = df_demand_temp[DEMAND_2021]
+        demand_rg = df_demand_temp['russian gas']
 
         # create trace in bar chart format, convert from kWh to TWh
         fig.add_trace(
             go.Bar(
-                x=['Demand (2021)', 'LNG Supply (L Gas)', 'LNG Supply (H Gas)'],
-                y=[x / 10**9 for x in (demand, lng_cap_l, lng_cap_h)],
+                x=['Total Demand (2021)', 'Demand for Russian Gas', 'LNG Supply (L Gas)', 'LNG Supply (H Gas)'],
+                y=[x / 10**9 for x in (demand, demand_rg, lng_cap_l, lng_cap_h)],
                 name=country
             )
         )
@@ -216,5 +225,4 @@ def plot_demand(df_lng, df_demand, year, country_filter=None):
 
 
 # Databases dataframes
-df_lng_terminals = read_terminals_db()
-df_demand_2021 = pd.read_excel(DEMAND_DB_FILENAME, sheet_name=DEMAND_DB_SHEET)
+df_lng_terminals, df_demand_2021 = read_terminals_db()
