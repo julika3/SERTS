@@ -130,7 +130,7 @@ def create_map(df, year):
     return fig
 
 
-def stats_n_plots(df_lng, year_filter, country_filter=None, type_filter=None):
+def plot_terminal_capacities(df_lng, year_filter, country_filter=None, type_filter=None):
     df_lng = df_lng[(df_lng[START_UP_DATE] <= year_filter)]
 
     if type_filter is not None:
@@ -159,7 +159,7 @@ def stats_n_plots(df_lng, year_filter, country_filter=None, type_filter=None):
         # sum up capacities for each country with the terminal type thats in the selected filter
         # add an unfiltered sum for europe if selected
         cap_country_type = [df_bar[df_bar[COUNTRY] == country][CAPACITY].sum() for country in country_type]
-        cap_plot = [df_lng[CAPACITY].sum()] + cap_country_type if show_europe else cap_country_type
+        cap_plot = [df_bar[CAPACITY].sum()] + cap_country_type if show_europe else cap_country_type
 
         fig.add_trace(go.Bar(
             x=countries_plot,

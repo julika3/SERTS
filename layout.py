@@ -145,7 +145,7 @@ def update_terminals_stats(submit_btn, year_slct, country_slct, type_slct):
     type_slct = type_slct if type_slct else None
     year_slct = 2023 if year_slct is None else int(year_slct)
 
-    fig = data.stats_n_plots(data.df_lng_terminals, year_slct, country_slct, type_slct)
+    fig = data.plot_terminal_capacities(data.df_lng_terminals, year_slct, country_slct, type_slct)
 
     return fig
 
