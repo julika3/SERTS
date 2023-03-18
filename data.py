@@ -16,6 +16,12 @@ LONGITUDE = 'longitude'
 START_UP_DATE = 'start up date'
 TYPE = 'type'
 
+# m^3 to kWh via the calorific value (DVGW G 260)
+# natural gas (L): 8,4 - 10,2 kWh/m^3
+# natural gas (H): 11,1 - 13,1 kWh/m^3
+CAL_VAL_MAX = 13.1
+CAL_VAL_MIN = 8.4
+
 # Demand
 DEMAND_DB_FILENAME = 'Production&Demand.xlsx'
 DEMAND_DB_SHEET = 'demand_storage_kWh'
@@ -49,13 +55,9 @@ def read_databases():
     df_capacity[LATITUDE] = df_capacity[LATITUDE].map(lambda x: float(x))
     df_capacity[LONGITUDE] = df_capacity[LONGITUDE].map(lambda x: float(x))
 
-    # m^3 to kWh via the calorific value (DVGW G 260)
-    # natural gas (L): 8,4 - 10,2 kWh/m^3
-    cal_val_l_min = 8.4
-    df_capacity['min capacity [kWh]'] = df_capacity[CAPACITY] * cal_val_l_min
-    # natural gas (H): 11,1 - 13,1 kWh/m^3
-    cal_val_h_max = 13.1
-    df_capacity['max capacity [kWh]'] = df_capacity[CAPACITY] * cal_val_h_max
+    # converting the volumetric capacities to energetic values
+    df_capacity['min capacity [kWh]'] = df_capacity[CAPACITY] * CAL_VAL_MIN
+    df_capacity['max capacity [kWh]'] = df_capacity[CAPACITY] * CAL_VAL_MAX
 
     # assign an out-of-scope start up date to terminals with unknown start up years to make them visible in map
     # these start up dates are unknown bc the completion date isn't final yet
